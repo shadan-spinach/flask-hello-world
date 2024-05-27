@@ -92,21 +92,6 @@ resource "aws_security_group" "ssh" {
   }
 }
 
-# Generate a Key Pair
-resource "tls_private_key" "example" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "generated_key" {
-  key_name   = "generated-key"
-  public_key = tls_private_key.example.public_key_openssh
-}
-
-resource "local_file" "private_key" {
-  content  = tls_private_key.example.private_key_pem
-  filename = "${path.module}/generated-key.pem"
-}
 
 # EC2 Instance in Public Subnet
 resource "aws_instance" "web" {
@@ -140,7 +125,7 @@ resource "aws_instance" "web" {
 
 # Network Load Balancer (NLB)
 resource "aws_lb" "nlb" {
-  name               = "web-nlb1"
+  name               = "web-nlb2"
   internal           = true
   load_balancer_type = "network"
   subnets            = [aws_subnet.public.id]
@@ -151,8 +136,8 @@ resource "aws_lb" "nlb" {
 }
 
 # Create a target group
-resource "aws_lb_target_group" "tg1" {
-  name     = "web-tg1"
+resource "aws_lb_target_group" "tg2" {
+  name     = "web-tg2"
   port     = 5000
   protocol = "TCP"
   vpc_id   = aws_vpc.main.id
@@ -160,7 +145,7 @@ resource "aws_lb_target_group" "tg1" {
 
 # Add the EC2 instance to the target group
 resource "aws_lb_target_group_attachment" "tg_attachment" {
-  target_group_arn = aws_lb_target_group.tg1.arn
+  target_group_arn = aws_lb_target_group.tg2.arn
   target_id        = aws_instance.web.id
   port             = 5000
 }
@@ -172,7 +157,7 @@ resource "aws_lb_listener" "nlb_listener" {
   protocol          = "TCP"
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.tg1.arn
+    target_group_arn = aws_lb_target_group.tg2.arn
   }
 }
 
