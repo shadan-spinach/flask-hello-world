@@ -131,6 +131,25 @@ resource "aws_instance" "web" {
   depends_on = [aws_security_group.ssh]
 }
 
+resource "aws_iam_role_policy" "ssm_policy" {
+  name = "ssm-policy"
+  role = aws_iam_role.ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "ssm:SendCommand",
+          "ssm:GetCommandInvocation"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # Network Load Balancer (NLB)
 resource "aws_lb" "nlb" {
   name               = "web-nlb3"
