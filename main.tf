@@ -152,7 +152,7 @@ resource "aws_lb" "nlb" {
 
 # Create a target group
 resource "aws_lb_target_group" "tg1" {
-  name     = "web-tg"
+  name     = "web-tg1"
   port     = 5000
   protocol = "TCP"
   vpc_id   = aws_vpc.main.id
@@ -160,7 +160,7 @@ resource "aws_lb_target_group" "tg1" {
 
 # Add the EC2 instance to the target group
 resource "aws_lb_target_group_attachment" "tg_attachment" {
-  target_group_arn = aws_lb_target_group.tg.arn
+  target_group_arn = aws_lb_target_group.tg1.arn
   target_id        = aws_instance.web.id
   port             = 5000
 }
@@ -172,7 +172,7 @@ resource "aws_lb_listener" "nlb_listener" {
   protocol          = "TCP"
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.tg.arn
+    target_group_arn = aws_lb_target_group.tg1.arn
   }
 }
 

@@ -46,7 +46,4 @@ jobs:
       id: image-uri
       run: echo "IMAGE_URI=${{ env.ECR_REPOSITORY }}:latest" >> $GITHUB_ENV
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build-and-push
 
