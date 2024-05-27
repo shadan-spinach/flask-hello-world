@@ -24,12 +24,6 @@ jobs:
     - name: Install AWS CLI
       run: sudo apt-get install -y awscli
 
-    - name: Download terraform.tfstate from S3
-      run: aws s3 cp s3://spinach-s3/terraform/terraform.tfstate terraform.tfstate
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
     - name: Terraform Init
       run: terraform init
 
@@ -43,13 +37,6 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: terraform apply -auto-approve tfplan
 
-    - name: Upload updated terraform.tfstate to S3
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: aws s3 cp terraform.tfstate s3://spinach-s3/terraform/terraform.tfstate
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
     - name: Wait for 15 minutes
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: |
@@ -59,10 +46,3 @@ jobs:
     - name: Terraform Destroy
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: terraform destroy -auto-approve
-
-    - name: Upload updated terraform.tfstate to S3 after destroy
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      run: aws s3 cp terraform.tfstate s3://spinach-s3/terraform/terraform.tfstate
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
