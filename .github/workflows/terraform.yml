@@ -33,4 +33,13 @@ jobs:
     - name: Terraform Apply
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: terraform apply -auto-approve tfplan
+    
+    - name: Wait for 15 minutes
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: |
+        echo "Waiting for 30 minutes before destroying the infrastructure..."
+        sleep 900
 
+    - name: Terraform Destroy
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      run: terraform destroy -auto-approve
