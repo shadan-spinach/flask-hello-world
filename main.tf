@@ -131,8 +131,27 @@ resource "aws_instance" "web" {
   depends_on = [aws_security_group.ssh]
 }
 
-resource "aws_iam_role_policy" "ssm_policy" {
-  name = "ssm-policy"
+# IAM Role for EC2 with SSM permissions
+resource "aws_iam_role" "ec2_role" {
+  name = "ec2-ssm-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# Attach policies to the IAM role
+resource "aws_iam_role_policy" "ec2_ssm_policy" {
+  name = "ec2-ssm-policy"
   role = aws_iam_role.ec2_role.id
 
   policy = jsonencode({
@@ -145,10 +164,42 @@ resource "aws_iam_role_policy" "ssm_policy" {
           "ssm:GetCommandInvocation"
         ],
         Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:GetAuthorizationToken"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = "logs:CreateLogStream",
+        Resource = "arn:aws:logs:*:*:log-group:/aws/ssm/*"
+      },
+      {
+        Effect = "Allow",
+        Action = "logs:PutLogEvents",
+        Resource = "arn:aws:logs:*:*:log-group:/aws/ssm/*:log-stream:*"
       }
     ]
   })
 }
+
+# Attach AmazonEC2RoleforSSM managed policy
+resource "aws_iam_role_policy_attachment" "ssm_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2RoleforSSM"
+}
+
+# Create an IAM Instance Profile
+resource "aws_iam_instance_profile" "ec2_instance_profile" {
+  name = "ec2-ssm-instance-profile"
+  role = aws_iam_role.ec2_role.name
+}
+
 
 # Network Load Balancer (NLB)
 resource "aws_lb" "nlb" {
