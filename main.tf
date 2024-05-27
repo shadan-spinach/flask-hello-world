@@ -106,7 +106,7 @@ resource "aws_instance" "web" {
   ami             = "ami-0c76ded57b818ac02" # Ubuntu 20
   instance_type   = "t2.micro"
   subnet_id       = aws_subnet.public.id
-  availability_zone = "ap-south-1c"
+  availability_zone = "ap-south-1b"
   vpc_security_group_ids = [aws_security_group.ssh.id]
   associate_public_ip_address = true
 
