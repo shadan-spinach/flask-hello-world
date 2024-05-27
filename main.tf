@@ -2,6 +2,14 @@ provider "aws" {
   region = "ap-south-1" # Change the region as needed
 }
 
+terraform {
+  backend "s3" {
+    bucket         = "spinach-s3"   # Replace with your S3 bucket name
+    key            = "terraform/terraform.tfstate" # Replace with the path to your state file
+    region         = "ap-south-1"            # Change to the region where your S3 bucket is located
+  }
+}
+
 # VPC
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -100,7 +108,6 @@ resource "aws_instance" "web" {
   subnet_id       = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.ssh.id]
   associate_public_ip_address = true
-  key_name        = aws_key_pair.generated_key.key_name
 
   # Add user_data to install Docker
   user_data = <<-EOF
@@ -125,7 +132,7 @@ resource "aws_instance" "web" {
 
 # Network Load Balancer (NLB)
 resource "aws_lb" "nlb" {
-  name               = "web-nlb2"
+  name               = "web-nlb3"
   internal           = true
   load_balancer_type = "network"
   subnets            = [aws_subnet.public.id]
@@ -136,8 +143,8 @@ resource "aws_lb" "nlb" {
 }
 
 # Create a target group
-resource "aws_lb_target_group" "tg2" {
-  name     = "web-tg2"
+resource "aws_lb_target_group" "tg3" {
+  name     = "web-tg3"
   port     = 5000
   protocol = "TCP"
   vpc_id   = aws_vpc.main.id
@@ -145,7 +152,7 @@ resource "aws_lb_target_group" "tg2" {
 
 # Add the EC2 instance to the target group
 resource "aws_lb_target_group_attachment" "tg_attachment" {
-  target_group_arn = aws_lb_target_group.tg2.arn
+  target_group_arn = aws_lb_target_group.tg3.arn
   target_id        = aws_instance.web.id
   port             = 5000
 }
@@ -157,7 +164,7 @@ resource "aws_lb_listener" "nlb_listener" {
   protocol          = "TCP"
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.tg2.arn
+    target_group_arn = aws_lb_target_group.tg3.arn
   }
 }
 
