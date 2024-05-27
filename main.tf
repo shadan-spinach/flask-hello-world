@@ -218,10 +218,6 @@ output "private_instance_ip" {
   value = aws_instance.web.private_ip
 }
 
-output "private_key_path" {
-  value = local_file.private_key.filename
-}
-
 output "api_gateway_endpoint" {
   value = aws_api_gateway_deployment.flask_api_deploy.invoke_url
 }
