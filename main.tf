@@ -100,6 +100,32 @@ resource "aws_security_group" "ssh" {
   }
 }
 
+resource "aws_iam_role" "ec2_role" {
+  name = "ssm-role"
+
+  assume_role_policy =jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Sid = ""
+      Principal= {
+        Service = "ec2.amazonaws.com"
+      }
+    },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "custom" {
+  role = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ssm-role-profile"
+  role = aws_iam_role.ec2_role.name
+}
 
 # EC2 Instance in Public Subnet
 resource "aws_instance" "web" {
@@ -109,7 +135,7 @@ resource "aws_instance" "web" {
   availability_zone = "ap-south-1b"
   vpc_security_group_ids = [aws_security_group.ssh.id]
   associate_public_ip_address = true
-
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
   # Add user_data to install Docker
   user_data = <<-EOF
               #!/bin/bash
@@ -130,76 +156,6 @@ resource "aws_instance" "web" {
   # Ensure the instance creation waits for the security group to be created
   depends_on = [aws_security_group.ssh]
 }
-
-# IAM Role for EC2 with SSM permissions
-resource "aws_iam_role" "ec2_role" {
-  name = "ec2-ssm-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        },
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-}
-
-# Attach policies to the IAM role
-resource "aws_iam_role_policy" "ec2_ssm_policy" {
-  name = "ec2-ssm-policy"
-  role = aws_iam_role.ec2_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = [
-          "ssm:SendCommand",
-          "ssm:GetCommandInvocation"
-        ],
-        Resource = "*"
-      },
-      {
-        Effect = "Allow",
-        Action = [
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:GetAuthorizationToken"
-        ],
-        Resource = "*"
-      },
-      {
-        Effect = "Allow",
-        Action = "logs:CreateLogStream",
-        Resource = "arn:aws:logs:*:*:log-group:/aws/ssm/*"
-      },
-      {
-        Effect = "Allow",
-        Action = "logs:PutLogEvents",
-        Resource = "arn:aws:logs:*:*:log-group:/aws/ssm/*:log-stream:*"
-      }
-    ]
-  })
-}
-
-# Attach AmazonEC2RoleforSSM managed policy
-resource "aws_iam_role_policy_attachment" "ssm_attachment" {
-  role       = aws_iam_role.ec2_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2RoleforSSM"
-}
-
-# Create an IAM Instance Profile
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2-ssm-instance-profile"
-  role = aws_iam_role.ec2_role.name
-}
-
 
 # Network Load Balancer (NLB)
 resource "aws_lb" "nlb" {
