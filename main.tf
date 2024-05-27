@@ -117,17 +117,30 @@ resource "aws_instance" "web" {
   associate_public_ip_address = true
   key_name        = aws_key_pair.generated_key.key_name
 
+  # Add user_data to install Docker
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt-get update
+              sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              sudo apt-get update
+              sudo apt-get install -y docker-ce
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              EOF
+
   tags = {
     Name = "web-server"
   }
 
- # Ensure the instance creation waits for the security group to be created
+  # Ensure the instance creation waits for the security group to be created
   depends_on = [aws_security_group.ssh]
 }
 
 # Network Load Balancer (NLB)
 resource "aws_lb" "nlb" {
-  name               = "web-nlb"
+  name               = "web-nlb1"
   internal           = true
   load_balancer_type = "network"
   subnets            = [aws_subnet.public.id]
@@ -138,7 +151,7 @@ resource "aws_lb" "nlb" {
 }
 
 # Create a target group
-resource "aws_lb_target_group" "tg" {
+resource "aws_lb_target_group" "tg1" {
   name     = "web-tg"
   port     = 5000
   protocol = "TCP"
