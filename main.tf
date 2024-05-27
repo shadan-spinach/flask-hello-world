@@ -222,3 +222,7 @@ output "private_instance_ip" {
 output "api_gateway_endpoint" {
   value = aws_api_gateway_deployment.flask_api_deploy.invoke_url
 }
+
+output "instance_id" {
+  value = aws_instance.web.id
+}
