@@ -42,7 +42,7 @@ jobs:
 
       - name: Terraform Apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        run: terraform apply -var="aws_access_key=${{ secrets.AWS_ACCESS_KEY_ID }}" -var="aws_secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" -auto-approve tfplan
+        run: terraform apply -auto-approve tfplan
 
       - name: Get Terraform Output
         id: tf-output
