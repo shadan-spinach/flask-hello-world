@@ -1,5 +1,18 @@
+variable "aws_access_key" {
+  description = "AWS Access Key ID"
+  type        = string
+}
+
+variable "aws_secret_key" {
+  description = "AWS Secret Access Key"
+  type        = string
+  sensitive   = true
+}
+
 provider "aws" {
-  region = "ap-south-1" # Change the region as needed
+  region     = "ap-south-1"
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
 }
 
 terraform {
@@ -147,6 +160,13 @@ resource "aws_instance" "web" {
               sudo apt-get install -y docker-ce
               sudo systemctl start docker
               sudo systemctl enable docker
+              # Install AWS CLI
+              sudo apt-get install -y awscli
+
+              # Configure AWS CLI with provided credentials
+              aws configure set aws_access_key_id ${var.aws_access_key}
+              aws configure set aws_secret_access_key ${var.aws_secret_key}
+              aws configure set default.region ap-south-1
               EOF
 
   tags = {
