@@ -43,7 +43,7 @@ jobs:
 
       - name: Get Terraform Output
         id: tf-output
-        run: terraform output -json > terraform_output.json
+        run: terraform-bin output -json > terraform_output.json
 
       - name: Save Instance ID
         id: save_instance_id
@@ -100,14 +100,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Send SSM Command to Run Docker Image
-        run: |
-          aws ssm send-command \
-            --instance-ids ${{ env.INSTANCE_ID }} \
-            --document-name "AWS-RunShellScript" \
-            --comment "Run Docker image" \
-            --parameters commands='
-              aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REPOSITORY }} &&
-              docker pull ${{ env.IMAGE_URI }} &&
-              docker run -d -p 5000:5000 ${{ env.IMAGE_URI }}
-            '
+          name: Execute Docker Commands on AWS Instance to deploy the application
+          run: |
+            command_id=$(aws ssm send-command \
+              --instance-ids ${{ env.INSTANCE_ID }} \
+              --document-name "AWS-RunShellScript" \
+              --comment "Executing Docker operations" \
+              --parameters commands='[
+                "set -e",
+                "trap '\''echo DOCKER_STOP_FAILURE 1>&2'\'' ERR; if docker ps --format '\''{{.Names}}'\'' | grep -q flask-app; then docker stop flask-app; fi",
+                "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ env.ECR_REPOSITORY }}",
+                "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ env.IMAGE_URI }}",
+                "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 5000:5000 --name flask-app ${{ env.IMAGE_URI }}"
+              ]' --query 'Command.CommandId' --output text)
+  
+            echo "command_id=$command_id" >> $GITHUB_ENV
