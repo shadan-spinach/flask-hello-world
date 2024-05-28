@@ -26,6 +26,7 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_version: 1.0.0
+          terraform_wrapper: false
 
       - name: Install AWS CLI
         run: sudo apt-get install -y awscli
@@ -45,7 +46,7 @@ jobs:
 
       - name: Get Terraform Output
         id: tf-output
-        run: terraform-bin output -json > terraform_output.json
+        run: terraform output -json > terraform_output.json
 
       - name: Save Instance ID
         id: save_instance_id
@@ -57,8 +58,6 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     needs: terraform
-    outputs:
-      image_uri: ${{ steps.save_image_uri.outputs.IMAGE_URI }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -87,11 +86,6 @@ jobs:
         run: |
           docker push ${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Save Image URI
-        id: save_image_uri
-        run: |
-          IMAGE_URI=${{ env.ECR_REPOSITORY }}:latest
-          echo "::set-output name=IMAGE_URI::${IMAGE_URI}"
 
   deploy:
     runs-on: ubuntu-latest
@@ -108,7 +102,6 @@ jobs:
         run: |
           echo "INSTANCE_ID=${{ needs.terraform.outputs.instance_id }}"
           echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}"
-          echo "IMAGE_URI=${{ needs.build-and-push.outputs.image_uri }}"
 
       - name: Execute Docker Commands on AWS Instance to Deploy the Application
         run: |
@@ -120,8 +113,8 @@ jobs:
               "set -e",
               "trap '\''echo DOCKER_STOP_FAILURE 1>&2'\'' ERR; if docker ps --format '\''{{.Names}}'\'' | grep -q flask-app; then docker stop flask-app; fi",
               "trap '\''echo DOCKER_LOGIN_FAILURE 1>&2'\'' ERR; aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ${{ env.ECR_REPOSITORY }}",
-              "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ needs.build-and-push.outputs.image_uri }}",
-              "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 5000:5000 --name flask-app ${{ needs.build-and-push.outputs.image_uri }}"
+              "trap '\''echo DOCKER_PULL_FAILURE 1>&2'\'' ERR; docker pull ${{ env.ECR_REPOSITORY }}:latest",
+              "trap '\''echo DOCKER_RUN_FAILURE 1>&2'\'' ERR; docker run -d -p 5000:5000 --name flask-app ${{ env.ECR_REPOSITORY }}:latest"
             ]' --query 'Command.CommandId' --output text)
 
           echo "command_id=$command_id" >> $GITHUB_ENV
