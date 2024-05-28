@@ -106,9 +106,9 @@ jobs:
 
       - name: Echo Environment Variables
         run: |
-          echo "INSTANCE_ID=${{ needs.terraform.outputs.instance_id }}"
+          echo "INSTANCE_ID=${{ needs.terraform.outputs.INSTANCE_ID }}"
           echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}"
-          echo "IMAGE_URI=${{ needs.build-and-push.outputs.image_uri }}"
+          echo "IMAGE_URI=${{ needs.build-and-push.outputs.IMAGR_URI }}"
 
       - name: Execute Docker Commands on AWS Instance to Deploy the Application
         run: |
