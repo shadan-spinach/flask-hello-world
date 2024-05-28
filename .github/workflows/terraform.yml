@@ -53,7 +53,8 @@ jobs:
         run: |
           INSTANCE_ID=$(jq -r '.instance_id.value' terraform_output.json)
           echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_ENV
-          echo "::set-output name=INSTANCE_ID::${INSTANCE_ID}"
+          echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_STEP_SUMMARY
+          echo "instance_id=${INSTANCE_ID}" >> $GITHUB_OUTPUT
 
   build-and-push:
     runs-on: ubuntu-latest
