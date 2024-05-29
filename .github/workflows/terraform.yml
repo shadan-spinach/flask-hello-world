@@ -95,14 +95,14 @@ jobs:
 
       - name: Echo Environment Variables
         run: |
-          echo "INSTANCE_ID=${{ needs.tf.outputs.INSTANCE_ID }}"
+          echo "INSTANCE_ID=${{ needs.terraform.outputs.instance_id }}"
           echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}"
 
       - name: Execute Docker Commands on AWS Instance to Deploy the Application
         run: |
           command_id=$(aws ssm send-command \
           --document-name "AWS-RunShellScript" \
-          --targets "Key=instanceIds,Values=${{ needs.tf.outputs.INSTANCE_ID }}" \
+          --targets "Key=instanceIds,Values=${{ needs.terraform.outputs.instance_id }}" \
           --parameters 'commands=["aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 905418210455.dkr.ecr.ap-south-1.amazonaws.com","docker pull 905418210455.dkr.ecr.ap-south-1.amazonaws.com/flask-app:latest","docker run -d -p 5000:5000 --name flask-app 905418210455.dkr.ecr.ap-south-1.amazonaws.com/flask-app:latest"]' \
           --comment "Pull and run Docker image from ECR with the name flask-app on port 5000" --query 'Command.CommandId' --output text)
 
