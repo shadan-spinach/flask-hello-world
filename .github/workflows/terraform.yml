@@ -44,13 +44,21 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve tfplan
 
+      - name: echo Instance ID
+        id: echo
+        run: |
+          echo "INSTANCE_ID=$(terraform output -raw instance_id)" 
+                    
       - name: Save Instance ID
         id: tf
-        run: |  
+        run: |
+          echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_ENV  
           echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
       - name: Github output
         id: git
-        run: cat $GITHUB_OUTPUT
+        run: 
+          cat $GITHUB_OUTPUT
+          cat $GITHUB_ENV
 
   build-and-push:
     runs-on: ubuntu-latest
