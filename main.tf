@@ -134,7 +134,6 @@ resource "aws_instance" "web" {
   subnet_id       = aws_subnet.public.id
   availability_zone = "ap-south-1b"
   vpc_security_group_ids = [aws_security_group.ssh.id]
-  associate_public_ip_address = true
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
   # Add user_data to install Docker
   user_data = <<-EOF
@@ -241,10 +240,6 @@ resource "aws_api_gateway_deployment" "flask_api_deploy" {
   depends_on = [aws_api_gateway_integration.flask_api_integration]
   rest_api_id = aws_api_gateway_rest_api.flask_api.id
   stage_name  = "prod"
-}
-
-output "public_instance_ip" {
-  value = aws_instance.web.public_ip
 }
 
 output "private_instance_ip" {
