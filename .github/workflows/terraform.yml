@@ -48,6 +48,9 @@ jobs:
         id: tf
         run: |  
           echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
+      - name: Github output
+        id: git
+        run: cat $GITHUB_OUTPUT
 
   build-and-push:
     runs-on: ubuntu-latest
