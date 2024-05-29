@@ -75,13 +75,6 @@ resource "aws_route_table_association" "public_assoc" {
 resource "aws_security_group" "ssh" {
   vpc_id = aws_vpc.main.id
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
    # Allow traffic on port 5000 only from the NLB
   ingress {
     from_port   = 5000
@@ -134,24 +127,6 @@ resource "aws_iam_role_policy_attachment" "ecs_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-
-# Generate a Key Pair
-resource "tls_private_key" "example" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "generated_key" {
-  key_name   = "generated-key"
-  public_key = tls_private_key.example.public_key_openssh
-}
-
-resource "local_file" "private_key" {
-  content  = tls_private_key.example.private_key_pem
-  filename = "${path.module}/generated-key.pem"
-}
-
-
 # EC2 Instance in Public Subnet
 resource "aws_instance" "web" {
   ami             = "ami-0c76ded57b818ac02" # Ubuntu 20
@@ -161,7 +136,6 @@ resource "aws_instance" "web" {
   vpc_security_group_ids = [aws_security_group.ssh.id]
   associate_public_ip_address = true
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
-  key_name        = aws_key_pair.generated_key.key_name
   # Add user_data to install Docker
   user_data = <<-EOF
               #!/bin/bash
@@ -173,7 +147,7 @@ resource "aws_instance" "web" {
               sudo apt-get install -y docker-ce
               sudo systemctl start docker
               sudo systemctl enable docker
-              
+
               # Add the default user to the docker group
               sudo usermod -aG docker ubuntu
               
@@ -283,8 +257,4 @@ output "api_gateway_endpoint" {
 
 output "instance_id" {
   value = aws_instance.web.id
-}
-
-output "private_key_path" {
-  value = local_file.private_key.filename
 }
