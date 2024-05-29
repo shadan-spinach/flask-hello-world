@@ -21,15 +21,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-
-  tags = {
-    Name = "main-igw"
-  }
-}
-
 # Public Subnet
 resource "aws_subnet" "public" {
   vpc_id            = aws_vpc.main.id
@@ -51,24 +42,43 @@ resource "aws_subnet" "private" {
   }
 }
 
-# Route Table for Public Subnet
-resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
-  }
+# Elastic IP for NAT Gateway
+resource "aws_eip" "nat" {
+  vpc = true
 
   tags = {
-    Name = "public-rt"
+    Name = "nat-eip"
   }
 }
 
-# Associate Public Subnet with Route Table
-resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public.id
-  route_table_id = aws_route_table.public.id
+# NAT Gateway
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public.id
+
+  tags = {
+    Name = "nat-gateway"
+  }
+}
+
+# Route Table for Private Subnet
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat.id
+  }
+
+  tags = {
+    Name = "private-rt"
+  }
+}
+
+# Associate Private Subnet with Route Table
+resource "aws_route_table_association" "private_assoc" {
+  subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private.id
 }
 
 # Security Group for SSH access
@@ -80,7 +90,7 @@ resource "aws_security_group" "ssh" {
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
-    cidr_blocks = ["10.0.1.0/24"] 
+    cidr_blocks = ["10.0.1.0/24"]
   }
   
   egress {
@@ -127,11 +137,11 @@ resource "aws_iam_role_policy_attachment" "ecs_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-# EC2 Instance in Public Subnet
+# EC2 Instance in Private Subnet
 resource "aws_instance" "web" {
   ami             = "ami-0c76ded57b818ac02" # Ubuntu 20
   instance_type   = "t2.micro"
-  subnet_id       = aws_subnet.public.id
+  subnet_id       = aws_subnet.private.id
   availability_zone = "ap-south-1b"
   vpc_security_group_ids = [aws_security_group.ssh.id]
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
@@ -167,7 +177,7 @@ resource "aws_lb" "nlb" {
   name               = "web-nlb3"
   internal           = true
   load_balancer_type = "network"
-  subnets            = [aws_subnet.public.id]
+  subnets            = [aws_subnet.private.id]
 
   tags = {
     Name = "web-nlb"
