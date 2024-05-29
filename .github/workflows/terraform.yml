@@ -51,7 +51,7 @@ jobs:
       - name: Save Instance ID
         id: save_instance_id
         run: |
-          INSTANCE_ID=$(jq -r '.instance_id.value' terraform_output.json)
+          INSTANCE_ID=$(jq -r 'instance_id.value' terraform_output.json)
           echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_ENV
           echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_STEP_SUMMARY
           echo "instance_id=${INSTANCE_ID}" >> $GITHUB_OUTPUT
