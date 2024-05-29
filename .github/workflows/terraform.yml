@@ -17,7 +17,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     outputs:
-      instance_id: ${{ steps.save_instance_id.outputs.INSTANCE_ID }}
+      instance_id: ${{ steps.tf.outputs.INSTANCE_ID }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -44,17 +44,12 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: terraform apply -auto-approve tfplan
 
-      - name: Get Terraform Output
-        id: tf-output
-        run: terraform output -json > terraform_output.json
-
       - name: Save Instance ID
-        id: save_instance_id
+        id: tf
         run: |
-          INSTANCE_ID=$(jq -r 'instance_id.value' terraform_output.json)
-          echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_ENV
-          echo "INSTANCE_ID=${INSTANCE_ID}" >> $GITHUB_STEP_SUMMARY
-          echo "instance_id=${INSTANCE_ID}" >> $GITHUB_OUTPUT
+          echo "INSTANCE_ID=${terraform output -raw instance_id}" >> $GITHUB_ENV
+          echo "INSTANCE_ID=${terraform output -raw instance_id}" >> $GITHUB_STEP_SUMMARY
+          echo "instance_id=${terraform output -raw instance_id}" >> $GITHUB_OUTPUT
 
   build-and-push:
     runs-on: ubuntu-latest
@@ -100,14 +95,14 @@ jobs:
 
       - name: Echo Environment Variables
         run: |
-          echo "INSTANCE_ID=${{ needs.terraform.outputs.instance_id }}"
+          echo "INSTANCE_ID=${{ needs.tf.outputs.INSTANCE_ID }}"
           echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}"
 
       - name: Execute Docker Commands on AWS Instance to Deploy the Application
         run: |
           command_id=$(aws ssm send-command \
           --document-name "AWS-RunShellScript" \
-          --targets "Key=instanceIds,Values=${{ needs.terraform.outputs.instance_id }}" \
+          --targets "Key=instanceIds,Values=${{ needs.tf.outputs.INSTANCE_ID }}" \
           --parameters 'commands=["aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 905418210455.dkr.ecr.ap-south-1.amazonaws.com","docker pull 905418210455.dkr.ecr.ap-south-1.amazonaws.com/flask-app:latest","docker run -d -p 5000:5000 --name flask-app 905418210455.dkr.ecr.ap-south-1.amazonaws.com/flask-app:latest"]' \
           --comment "Pull and run Docker image from ECR with the name flask-app on port 5000" --query 'Command.CommandId' --output text)
 
