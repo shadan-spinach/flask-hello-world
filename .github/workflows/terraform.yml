@@ -17,7 +17,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     outputs:
-      instance_id: ${{ steps.tf.outputs.INSTANCE_ID }}
+      instance_id: ${{ steps.git.outputs.INSTANCE_ID }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -48,17 +48,19 @@ jobs:
         id: echo
         run: |
           echo "INSTANCE_ID=$(terraform output -raw instance_id)" 
-                    
+
       - name: Save Instance ID
         id: tf
         run: |
           echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_ENV  
-          echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
       - name: Github output
         id: git
-        run: 
-          cat $GITHUB_OUTPUT
-          cat $GITHUB_ENV
+        run:
+          cat $GITHUB_ENV 
+          echo "$INSTANCE_ID=${{env.INSTANCE_ID}}" >> $GITHUB_OUTPUT
+      - name: Outputt
+        id: Out
+        run: cat $GITHUB_OUTPUT
 
   build-and-push:
     runs-on: ubuntu-latest
@@ -120,3 +122,4 @@ jobs:
       - name: Check Command Status
         run: |
           aws ssm list-command-invocations --command-id --details
+
