@@ -116,6 +116,14 @@ resource "aws_security_group" "ssh" {
     cidr_blocks = ["10.0.1.0/24"]
   }
   
+  # Allow traffic on port 443 only from the NLB
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.1.0/24"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
