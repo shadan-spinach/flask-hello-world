@@ -1,18 +1,7 @@
-variable "aws_access_key" {
-  description = "AWS Access Key ID"
-  type        = string
-}
-
-variable "aws_secret_key" {
-  description = "AWS Secret Access Key"
-  type        = string
-  sensitive   = true
-}
 
 provider "aws" {
   region     = "ap-south-1"
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
+
 }
 
 terraform {
@@ -140,6 +129,29 @@ resource "aws_iam_instance_profile" "ec2_profile" {
   role = aws_iam_role.ec2_role.name
 }
 
+resource "aws_iam_role_policy_attachment" "ecs_policy_attachment" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+
+# Generate a Key Pair
+resource "tls_private_key" "example" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "generated_key" {
+  key_name   = "generated-key"
+  public_key = tls_private_key.example.public_key_openssh
+}
+
+resource "local_file" "private_key" {
+  content  = tls_private_key.example.private_key_pem
+  filename = "${path.module}/generated-key.pem"
+}
+
+
 # EC2 Instance in Public Subnet
 resource "aws_instance" "web" {
   ami             = "ami-0c76ded57b818ac02" # Ubuntu 20
@@ -149,6 +161,7 @@ resource "aws_instance" "web" {
   vpc_security_group_ids = [aws_security_group.ssh.id]
   associate_public_ip_address = true
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  key_name        = aws_key_pair.generated_key.key_name
   # Add user_data to install Docker
   user_data = <<-EOF
               #!/bin/bash
@@ -160,13 +173,12 @@ resource "aws_instance" "web" {
               sudo apt-get install -y docker-ce
               sudo systemctl start docker
               sudo systemctl enable docker
+              
+              # Add the default user to the docker group
+              sudo usermod -aG docker ubuntu
+              
               # Install AWS CLI
               sudo apt-get install -y awscli
-
-              # Configure AWS CLI with provided credentials
-              aws configure set aws_access_key_id ${var.aws_access_key}
-              aws configure set aws_secret_access_key ${var.aws_secret_key}
-              aws configure set default.region ap-south-1
               EOF
 
   tags = {
@@ -271,4 +283,8 @@ output "api_gateway_endpoint" {
 
 output "instance_id" {
   value = aws_instance.web.id
+}
+
+output "private_key_path" {
+  value = local_file.private_key.filename
 }
