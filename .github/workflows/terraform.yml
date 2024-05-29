@@ -46,7 +46,8 @@ jobs:
 
       - name: Save Instance ID
         id: tf
-        run: |
+        run: |  
+          echo "INSTANCE_ID=$(terraform output -raw instance_id)"
           echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_ENV
           echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_STEP_SUMMARY
           echo "INSTANCE_ID=$(terraform output -raw instance_id)" >> $GITHUB_OUTPUT
