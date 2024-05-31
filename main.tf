@@ -242,6 +242,38 @@ resource "aws_api_gateway_deployment" "flask_api_deploy" {
   stage_name  = "prod"
 }
 
+resource "aws_ecr_repository" "flask_app_new" {
+  name                 = "flask-app-new"
+  image_tag_mutability = "MUTABLE"
+}
+
+resource "aws_ecr_lifecycle_policy" "flask_app_policy" {
+  repository = aws_ecr_repository.flask_app_new.name
+
+  policy = <<EOF
+{
+  "rules": [
+    {
+      "rulePriority": 1,
+      "description": "Retain only the three newest images",
+      "selection": {
+        "tagStatus": "any",
+        "countType": "imageCountMoreThan",
+        "countNumber": 3
+      },
+      "action": {
+        "type": "expire"
+      }
+    }
+  ]
+}
+EOF
+}
+
+output "repository_url" {
+  value = aws_ecr_repository.flask_app_new.repository_url
+}
+
 output "private_instance_ip" {
   value = aws_instance.web.private_ip
 }
