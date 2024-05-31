@@ -250,16 +250,16 @@ resource "aws_ecr_repository" "flask_app_new" {
 resource "aws_ecr_lifecycle_policy" "flask_app_policy" {
   repository = aws_ecr_repository.flask_app_new.name
 
-  policy = <<EOF
+  policy = <<POLICY
 {
   "rules": [
     {
       "rulePriority": 1,
-      "description": "Retain only the three newest images",
+      "description": "Retain only the single newest image",
       "selection": {
         "tagStatus": "any",
         "countType": "imageCountMoreThan",
-        "countNumber": 3
+        "countNumber": 1
       },
       "action": {
         "type": "expire"
@@ -267,8 +267,9 @@ resource "aws_ecr_lifecycle_policy" "flask_app_policy" {
     }
   ]
 }
-EOF
+POLICY
 }
+
 
 output "repository_url" {
   value = aws_ecr_repository.flask_app_new.repository_url
