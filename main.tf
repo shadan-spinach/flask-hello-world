@@ -153,11 +153,6 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_ec2_execution" {
-  role       = aws_iam_role.ecs_task_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
-}
-
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
   role       = aws_iam_role.ecs_task_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
@@ -206,6 +201,11 @@ resource "aws_iam_role_policy_attachment" "ecs_policy_attachment" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+resource "aws_iam_role_policy_attachment" "ecs_ec2_execution" {
+  role       = aws_iam_role.ec2_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
 resource "aws_ecs_cluster" "ecs_cluster" {
   name = "ecs-cluster"
 }
@@ -244,6 +244,7 @@ resource "aws_ecs_service" "flask_service" {
     container_name   = "flask-container"
     container_port   = 5000
   }
+  depends_on = [ aws_ecs_task_definition.flask_task ]
 }
 
 resource "aws_instance" "web" {
