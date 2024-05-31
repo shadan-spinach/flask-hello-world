@@ -63,6 +63,10 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Echo Environment Variables
+        run: |
+            echo "ecr_uri=${{ needs.terraform.outputs.ecr_uri }}"
 
       - name: Login to AWS ECR
         id: login-ecr
@@ -95,7 +99,6 @@ jobs:
       - name: Echo Environment Variables
         run: |
           echo "INSTANCE_ID=${{ needs.terraform.outputs.instance_id }}"
-          echo "ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}"
 
       - name: Execute Docker Commands on AWS Instance to Deploy the Application
         run: |
