@@ -7,7 +7,7 @@ CORS(app, origins=["*"])
 
 @app.route("/flask")
 def hello():
-    return "Flask inside Docker thru github!! check image"
+    return "Flask inside Docker thru github!! new ECR"
 
 
 if __name__ == "__main__":
