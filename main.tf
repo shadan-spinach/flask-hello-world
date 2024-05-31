@@ -100,6 +100,13 @@ resource "aws_security_group" "ssh" {
     protocol    = "tcp"
     cidr_blocks = ["10.0.1.0/24"]
   }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
   
   egress {
     from_port   = 0
@@ -111,6 +118,23 @@ resource "aws_security_group" "ssh" {
   tags = {
     Name = "ssh-sg"
   }
+}
+
+
+# Generate a Key Pair
+resource "tls_private_key" "example" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "generated_key" {
+  key_name   = "generated-key"
+  public_key = tls_private_key.example.public_key_openssh
+}
+
+resource "local_file" "private_key" {
+  content  = tls_private_key.example.private_key_pem
+  filename = "${path.module}/generated-key.pem"
 }
 
 resource "aws_iam_role" "ecs_task_role" {
@@ -222,8 +246,10 @@ resource "aws_instance" "web" {
   instance_type   = "t2.micro"
   subnet_id       = aws_subnet.public.id
   availability_zone = "ap-south-1b"
-    vpc_security_group_ids = [aws_security_group.ssh.id]
+  vpc_security_group_ids = [aws_security_group.ssh.id]
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  key_name        = aws_key_pair.generated_key.key_name
+  associate_public_ip_address = true
   user_data = <<-EOF
               #!/bin/bash
               sudo apt-get update
@@ -339,4 +365,8 @@ output "api_gateway_endpoint" {
 
 output "instance_id" {
   value = aws_instance.web.id
+}
+
+output "private_key_path" {
+  value = local_file.private_key.filename
 }
