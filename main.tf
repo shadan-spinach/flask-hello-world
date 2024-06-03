@@ -214,8 +214,8 @@ resource "aws_ecs_task_definition" "flask_task" {
   family                   = "flask-task"
   requires_compatibilities = ["EC2"]
   network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
+  cpu                      = "128" # Reduced from 256 to 128
+  memory                   = "128" # Reduced from 256 to 128
   execution_role_arn       = aws_iam_role.ecs_task_role.arn
   container_definitions    = jsonencode([{
     name  = "flask-container"
@@ -228,6 +228,7 @@ resource "aws_ecs_task_definition" "flask_task" {
     }]
   }])
 }
+
 
 resource "aws_ecs_service" "flask_service" {
   name            = "flask-service"
