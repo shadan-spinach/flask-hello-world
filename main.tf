@@ -236,6 +236,8 @@ resource "aws_ecs_service" "flask_service" {
   task_definition = aws_ecs_task_definition.flask_task.arn
   desired_count   = 1
   launch_type     = "EC2"
+  deployment_maximum_percent = 200
+  deployment_minimum_healthy_percent = 50
   network_configuration {
     subnets         = [aws_subnet.public.id]
     security_groups = [aws_security_group.ssh.id]
