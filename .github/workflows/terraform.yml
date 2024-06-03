@@ -100,18 +100,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: flask-task
-          container-name: flask-container
-          image: ${{ needs.terraform.outputs.ecr_uri }}:latest
-    
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: flask-task
-          service: flask-service
-          cluster: ecs-cluster
-          wait-for-service-stability: true
+      - name: Update ECS Service
+        run: |
+          aws ecs update-service \
+            --cluster ecs-cluster \
+            --service flask-service \
+            --force-new-deployment
