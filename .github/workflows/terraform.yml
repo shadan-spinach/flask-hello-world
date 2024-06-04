@@ -111,5 +111,4 @@ jobs:
           aws ecs update-service \
             --cluster ecs-cluster \
             --service flask-service \
-            --force-new-deployment \
-            --env-value name=DB_URI,value=${{ needs.terraform.outputs.db_uri }}
+            --force-new-deployment 

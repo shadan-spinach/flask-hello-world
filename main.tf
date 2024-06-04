@@ -226,8 +226,14 @@ resource "aws_ecs_task_definition" "flask_task" {
       hostPort      = 5000
       protocol      = "tcp"
     }]
+    environment = [{
+      name  = "DB_URI"
+      value = "postgres://${var.DB_USERNAME}:${var.DB_PASSWORD}@${aws_db_instance.postgres_rds.endpoint}/${var.DB_NAME}"
+    }]
   }])
+  depends_on = [aws_db_instance.postgres_rds]
 }
+
 
 
 resource "aws_ecs_service" "flask_service" {
@@ -374,9 +380,10 @@ resource "aws_security_group" "rds_security_group" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["10.0.1.0/24"]  # Adjust as necessary to restrict to the subnet or specific instances
   }
 
   egress {
@@ -391,6 +398,7 @@ resource "aws_security_group" "rds_security_group" {
     Name = "RDS Security Group"
   }
 }
+
 
 resource "aws_db_subnet_group" "private_subnet_group" {
   name       = "private-subnet-group"
