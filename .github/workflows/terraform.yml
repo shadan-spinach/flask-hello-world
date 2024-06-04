@@ -18,6 +18,7 @@ jobs:
     outputs:
       instance_id: ${{ steps.output-instance-id.outputs.instance_id }}
       ecr_uri: ${{ steps.output-ecr-uri.outputs.ecr_uri }}
+      db_uri: ${{ steps.get-db-uri.outputs.db_uri }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -38,7 +39,7 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -var="DB_USERNAME=${{ secrets.DB_USERNAME }}" -var="DB_PASSWORD==${{ secrets.DB_PASSWORD }}" -out=tfplan -input=false
 
       - name: Terraform Apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -53,6 +54,11 @@ jobs:
         id: output-ecr-uri
         run: |
           echo "ecr_uri=$(terraform output -raw repository_url)" >> $GITHUB_OUTPUT
+      
+      - name: Get DB URI from Terraform
+        id: get-db-uri
+        run: |
+          echo "db_uri=$(terraform output -raw db_uri)" >> $GITHUB_OUTPUT
 
   build-and-push:
     runs-on: ubuntu-latest
@@ -99,10 +105,11 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-
+  
       - name: Update ECS Service
         run: |
           aws ecs update-service \
             --cluster ecs-cluster \
             --service flask-service \
-            --force-new-deployment
+            --force-new-deployment \
+            --env-value name=DB_URI,value=${{ needs.terraform.outputs.db_uri }}

@@ -237,7 +237,7 @@ resource "aws_ecs_service" "flask_service" {
   desired_count   = 1
   launch_type     = "EC2"
   deployment_maximum_percent = 200
-  deployment_minimum_healthy_percent = 50
+  deployment_minimum_healthy_percent = 0
   network_configuration {
     subnets         = [aws_subnet.public.id]
     security_groups = [aws_security_group.ssh.id]
@@ -358,4 +358,89 @@ output "instance_id" {
 
 output "private_key_path" {
   value = local_file.private_key.filename
+}
+
+resource "aws_subnet" "private_2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "ap-south-1a"
+  tags = {
+    Name = "private-subnet-2"
+  }
+}
+
+resource "aws_security_group" "rds_security_group" {
+  name_prefix = "rds-sg-"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "RDS Security Group"
+  }
+}
+
+resource "aws_db_subnet_group" "private_subnet_group" {
+  name       = "private-subnet-group"
+  subnet_ids = [aws_subnet.private.id, aws_subnet.private_2.id]
+
+  tags = {
+    Name = "Private Subnet Group"
+  }
+}
+
+variable "DB_USERNAME" {
+  description = "Database username"
+  type        = string
+  default     = "myuser"
+}
+
+variable "DB_PASSWORD" {
+  description = "Database password"
+  type        = string
+  sensitive   = true # Mark the password as sensitive
+}
+
+variable "DB_NAME" {
+  description = "Database name"
+  type        = string
+  default     = "mydatabase"
+}
+
+resource "aws_db_instance" "postgres_rds" {
+  identifier           = "postgres-rds"
+  instance_class       = "db.t3.micro"
+  allocated_storage    = 20
+  storage_type         = "gp2"
+  engine               = "postgres"
+  engine_version       = "16.2"
+  db_name              = var.DB_NAME
+  username             = var.DB_USERNAME
+  password             = var.DB_PASSWORD
+  vpc_security_group_ids = [aws_security_group.rds_security_group.id]
+  db_subnet_group_name = aws_db_subnet_group.private_subnet_group.name
+  skip_final_snapshot  = true
+  publicly_accessible  = false
+
+  tags = {
+    Name = "PostgreSQL RDS"
+  }
+}
+
+output "db_uri" {
+  description = "Database URI"
+  value       = "postgres://${var.DB_USERNAME}:${var.DB_PASSWORD}@${aws_db_instance.postgres_rds.endpoint}/${var.DB_NAME}"
+  sensitive   = true # Mark the output as sensitive
 }
