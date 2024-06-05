@@ -20,7 +20,7 @@ def create_connection():
 def hello():
     return "flask inside Docker thru github!! postgres check again"
 
-@app.route("/flask/database")
+@app.route("/database")
 def check_db_connection():
     connection = create_connection()
     if connection:
