@@ -277,9 +277,10 @@ resource "aws_instance" "web" {
   depends_on = [aws_security_group.ssh]
 }
 
+# Network Load Balancer
 resource "aws_lb" "nlb" {
   name               = "web-nlb3"
-  internal           = true
+  internal           = false  # Change to false to expose it to the internet
   load_balancer_type = "network"
   subnets            = [aws_subnet.public.id]
 
@@ -329,6 +330,7 @@ resource "aws_api_gateway_method" "flask_api_method" {
   authorization = "NONE"
 }
 
+# API Gateway Integration
 resource "aws_api_gateway_integration" "flask_api_integration" {
   rest_api_id             = aws_api_gateway_rest_api.flask_api.id
   resource_id             = aws_api_gateway_resource.flask_api_resource.id
@@ -339,6 +341,7 @@ resource "aws_api_gateway_integration" "flask_api_integration" {
   connection_type         = "VPC_LINK"
   connection_id           = aws_api_gateway_vpc_link.vpc_link.id
 }
+
 
 resource "aws_api_gateway_deployment" "flask_api_deploy" {
   depends_on  = [aws_api_gateway_integration.flask_api_integration]
