@@ -328,6 +328,10 @@ resource "aws_api_gateway_method" "proxy_method" {
   resource_id   = aws_api_gateway_resource.proxy_resource.id
   http_method   = "ANY"
   authorization = "NONE"  # Adjust this if authentication is required
+  api_key_required = false
+  request_parameters = {
+    "method.request.path.proxy" = true
+  }
 }
 
 resource "aws_api_gateway_integration" "proxy_integration" {
@@ -339,13 +343,17 @@ resource "aws_api_gateway_integration" "proxy_integration" {
   uri                     = "http://${aws_lb.nlb.dns_name}:5000/{proxy}"
   connection_type         = "VPC_LINK"
   connection_id           = aws_api_gateway_vpc_link.vpc_link.id
+  cache_key_parameters = ["method.request.path.proxy"]
+  request_parameters = {
+    "integration.request.path.proxy" = "method.request.path.proxy"
+  }
 }
 
 
 resource "aws_api_gateway_deployment" "flask_api_deploy" {
   depends_on  = [aws_api_gateway_integration.proxy_integration]
   rest_api_id = aws_api_gateway_rest_api.flask_api.id
-  stage_name  = "prod"
+  stage_name  = "v1"
 }
 
 
