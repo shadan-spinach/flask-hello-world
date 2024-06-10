@@ -15,6 +15,9 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    defaults:
+      run:
+        working-directory: ./terraform
     outputs:
       instance_id: ${{ steps.output-instance-id.outputs.instance_id }}
       ecr_uri: ${{ steps.output-ecr-uri.outputs.ecr_uri }}
@@ -111,4 +114,4 @@ jobs:
           aws ecs update-service \
             --cluster ecs-cluster \
             --service flask-service \
-            --force-new-deployment 
+            --force-new-deployment
