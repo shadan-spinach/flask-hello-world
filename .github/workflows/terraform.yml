@@ -109,9 +109,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
   
-      - name: Update ECS Service
+      - name: Update flask Service
         run: |
           aws ecs update-service \
             --cluster ecs-cluster \
             --service flask-service \
+            --force-new-deployment
+      
+      - name: Update strapi Service
+        run: |
+          aws ecs update-service \
+            --cluster ecs-cluster \
+            --service strapi-service \
             --force-new-deployment
