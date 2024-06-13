@@ -1,5 +1,5 @@
 output "repository_url" {
-  value = aws_ecr_repository.flask_app_new.repository_url
+  value = aws_ecr_repository.strapi_app.repository_url
 }
 
 output "private_instance_ip" {
@@ -22,4 +22,13 @@ output "db_uri" {
   description = "Database URI"
   value       = "postgres://${var.DB_USERNAME}:${var.DB_PASSWORD}@${aws_db_instance.postgres_rds.endpoint}/${var.DB_NAME}"
   sensitive   = true
+}
+
+output "db_endpoint" {
+  description = "Database endpoint"
+  value       = aws_db_instance.postgres_rds.endpoint
+}
+
+output "nlb_dns_name" {
+  value = aws_lb.nlb.dns_name
 }

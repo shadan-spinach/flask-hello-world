@@ -14,7 +14,8 @@ resource "local_file" "private_key" {
 }
 
 resource "aws_instance" "web" {
-  ami                      = "ami-0f8bd0dd1106fad54"
+  ami                      = "ami-0f8bd0dd1106fad54" #amazon ecs 
+  #ami                     = "ami-0c76ded57b818ac02" #ubuntu
   instance_type            = "t2.micro"
   subnet_id                = aws_subnet.public.id
   availability_zone        = "ap-south-1b"
