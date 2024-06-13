@@ -18,7 +18,7 @@ def create_connection():
 
 @app.route("/flask")
 def hello():
-    return "flask inside Docker thru github!! changed folder"
+    return "flask inside Docker thru github!! changed"
 
 @app.route("/database")
 def check_db_connection():
